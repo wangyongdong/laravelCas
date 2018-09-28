@@ -7,5 +7,55 @@ The easiest way to achieve the CAS service I need.
 
 ## Installation
 
-`composer require wangyongdong/laravelCAS`
+`composer require wangyongdong/laravelcas`
 
+
+### Setup
+> NOTE : This package supports the auto-discovery feature of Laravel 5.5, So you can skip this section if you're using Laravel 5.5.
+
+1.register the service provider in config/app.php
+
+`
+'providers' => [
+     ...
+     Cas\CasServiceProvider::class,
+ ],
+`
+
+2.Optional: And the facade in the aliases array:
+
+`
+'aliases' => [
+    ...
+    'Cas' => Cas\Facades\Cas::class,
+],
+`
+
+3.Publish the config file
+
+`php artisan vendor:publish --provider="Cas\CasServiceProvider"`
+
+
+### Configuration
+
+After the publish is completed, a configuration file named `config/cas.php` is automatically generated.
+
+- CAS_HOST: Full Hostname of your CAS Server.
+- CAS_CONTENT: Context of the CAS Server.
+- CAS_PORT: Port of your CAS server. 
+- CAS_VERSION: CAS version,Usually use the default.
+
+More configuration can be found in config/cas.php
+
+### Usage
+
+- Cas::isAuthenticated();
+- Cas::checkAuthentication();
+- Cas::authenticate();
+- Cas::getUser();
+- Cas::logoutWithUrl();
+- Cas::logout_url();
+
+
+### Links
+[PHPCAS](https://github.com/apereo/phpCAS)
