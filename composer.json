@@ -1,0 +1,50 @@
+{
+  "name": "wangyongdong/laravelcas",
+  "description": "This is laravel phpcas",
+  "keywords": ["php", "cas", "laravel", "auth"],
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "wangyongdong"
+    }
+  ],
+  "minimum-stability": "dev",
+  "require": {
+    "php": ">=5.4.0",
+    "wangyongdong/phpCAS": "dev-master"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "~4.5"
+  },
+  "repositories": {
+    "packagist": {
+      "type": "composer",
+      "url": "https://packagist.phpcomposer.com"
+    },
+    "wangyongdong/phpCAS": {
+      "url": "https://github.com/wangyongdong/phpCAS.git",
+      "type": "git"
+    }
+  },
+  "autoload": {
+    "psr-4": {
+      "Cas\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Cas\\Tests\\": "src/tests/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Cas\\CasServiceProvider"
+      ],
+      "aliases": {
+        "Cas": "Cas\\Facades\\Cas"
+      }
+    }
+  }
+}
