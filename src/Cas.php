@@ -59,6 +59,15 @@ class Cas {
         // In php7.2, you need to use session_start() before
         // More information：php.net/manual/zh/function.session-name.php
         if (!headers_sent() && session_id() == "" ) {
+            try {
+                if(!file_exists($this->config['SESSION_PATH'].'/.gitignore')) {
+                    mkdir($this->config['SESSION_PATH'], 0777, true);
+                    file_put_contents($this->config['SESSION_PATH'].'/.gitignore',"*\n!.gitignore");
+                }
+            } catch (\Exception $e) {
+                throw new \Exception('Cannot create file： ' . $this->config['SESSION_PATH'].'/.gitignore');
+            }
+
             session_name($this->config['SESSION_NAME']);
 
             // set session_info
