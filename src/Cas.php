@@ -61,6 +61,13 @@ class Cas {
         if (!headers_sent() && session_id() == "" ) {
             session_name($this->config['SESSION_NAME']);
 
+            // set session_info
+            ini_set('session.gc_probability', 1);
+            ini_set('session.gc_divisor', 1000);
+            ini_set('session.save_path', $this->config['SESSION_PATH']);
+            ini_set('session.name', $this->config['SESSION_NAME']);
+            ini_set('session.gc_maxlifetime', $this->config['SESSION_MAX_LIFE']);
+
             // Harden session cookie to prevent some attacks on the cookie (e.g. XSS)
             $currentCookieParams = session_get_cookie_params();
             session_set_cookie_params(
@@ -141,7 +148,8 @@ class Cas {
             $initializer,
             $this->config['CAS_HOST'],
             (int) $this->config['CAS_PORT'],
-            $this->config['CAS_CONTENT'], $this->config['CAS_CONTROL_SESSION']
+            $this->config['CAS_CONTENT'],
+            $this->config['CAS_CONTROL_SESSION']
         );
 
         if ($this->config['CAS_ENABLE_SAML']) {
