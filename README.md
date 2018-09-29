@@ -71,6 +71,7 @@ More configuration can be found in config/cas.php
 - Cas::getUser();
 - Cas::logoutWithUrl();
 - Cas::logout_url();
+- $request->user;
 
 
 ### Links

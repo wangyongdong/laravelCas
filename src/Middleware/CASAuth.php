@@ -34,8 +34,7 @@ class CASAuth
     {
         if($this->cas->checkAuthentication())
         {
-            // Store the user credentials in a Laravel managed session
-            session()->put('cas_user', $this->cas->user());
+            $request->offsetSet('user', $this->cas->user());
         } else {
             if ($request->ajax() || $request->wantsJson()) {
                 return response('Unauthorized.', 401);
