@@ -35,6 +35,22 @@ The easiest way to achieve the CAS service I need.
 
 `php artisan vendor:publish --provider="Cas\CasServiceProvider"`
 
+4.Use CAS middleware
+
+If you want to use the CAS service as a middleware for authentication, you can configure it in the $routeMiddleware `app/Http/Kernel.php`
+
+`'cas' => \Cas\Middleware\CASAuth::class,`
+
+AND Using middleware
+
+```php
+Route::group(['middleware' => ['cas']], function () {
+    Route::get('/auth', function (Request $request) {
+        $user = Cas::getUser();
+        dd($user);
+    });
+});
+```
 
 ### Configuration
 
