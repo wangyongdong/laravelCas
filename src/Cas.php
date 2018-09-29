@@ -55,16 +55,20 @@ class Cas {
      * set session and cookie
      */
     protected function setsess() {
-        // Fix for PHP 7.2.  See http://php.net/manual/en/function.session-name.php
+        // Calling the session_name() function generates an error after the content of the cookie is sent in the HTTP response
+        // In php7.2, you need to use session_start() before
+        // More information：php.net/manual/zh/function.session-name.php
         if (!headers_sent() && session_id() == "" ) {
             session_name($this->config['SESSION_NAME']);
 
             // Harden session cookie to prevent some attacks on the cookie (e.g. XSS)
-            session_set_cookie_params($this->config['SESSION_MAX_LIFE'],
+            $currentCookieParams = session_get_cookie_params();
+            session_set_cookie_params(
+                $this->config['SESSION_MAX_LIFE'],
                 $this->config['SESSION_PATH'],
-                env('APP_DOMAIN'),
-                env('HTTPS_ONLY_COOKIES'),
-                $this->config['SESSION_HTTPONLY']
+                $this->config['SESSION_DOMAIN'],
+                $currentCookieParams["secure"],
+                $currentCookieParams["httponly"]
             );
         }
     }

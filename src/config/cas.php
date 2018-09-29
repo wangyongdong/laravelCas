@@ -98,8 +98,8 @@ return [
     //        SESSION Configuration      //
     ///////////////////////////////////////
 
-    'SESSION_NAME' => 'sess',
-    'SESSION_PATH' => '/',
+    'SESSION_NAME' => 'PHPSESSION',
+    'SESSION_PATH' => storage_path('cas'),
     'SESSION_MAX_LIFE' => '86400',
-    'SESSION_HTTPONLY' => true,
+    'SESSION_DOMAIN' => env('APP_DOMAIN'),
 ];
