@@ -94,10 +94,10 @@ class Cas {
      */
     public function debug() {
         if ($this->config['CAS_DEBUG'] === true) {
-            phpCAS::setDebug();
+            phpCAS::setDebug($this->config['CAS_DEBUG_FILE_PATH']);
             phpCAS::log( 'Loaded configuration:' . PHP_EOL . serialize($this->config) );
         } else {
-            phpCAS::setDebug($this->config['cas_debug'] );
+            phpCAS::setDebug($this->config['CAS_DEBUG']);
         }
 
         phpCAS::setVerbose($this->config['CAS_VERBOSE']);

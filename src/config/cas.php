@@ -9,6 +9,7 @@ return [
      * Enable debugging
      */
     'CAS_DEBUG' => true,
+    'CAS_DEBUG_FILE_PATH' => storage_path() . 'phpCAS.log',
 
     /**
      * Enable verbose error messages. Disable in production!
@@ -75,6 +76,7 @@ return [
 
     /**
      * Allow phpCAS to change the session_id (Single Sign Out/handleLogoutRequests is based on that change)
+     * true : allow to change the session_id(), false session_id won't be change and logout won't be handle because of that
      */
     'CAS_CONTROL_SESSION'  => false,
 
