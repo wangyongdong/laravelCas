@@ -35,6 +35,8 @@ class CASAuth
         if($this->cas->checkAuthentication())
         {
             $request->offsetSet('user', $this->cas->user());
+            // 存到 session...
+            session(['userid' => $this->cas->user()]);
         } else {
             if ($request->ajax() || $request->wantsJson()) {
                 return response('Unauthorized.', 401);

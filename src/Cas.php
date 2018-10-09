@@ -285,6 +285,7 @@ class Cas {
         if (!$auth) {
             return false;
         }
+
         return true;
     }
 
