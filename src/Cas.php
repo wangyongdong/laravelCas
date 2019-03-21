@@ -1,5 +1,5 @@
 <?php
-namespace Cas;
+namespace Laravelcas\Cas;
 
 use phpCAS;
 
@@ -19,35 +19,115 @@ class Cas {
      * @param array $config
      */
     public function __construct(array $config) {
-        if(!$this->validateCasAuth()) {
+        if(!$this->validateSpider()) {
             return false;
         }
 
         $this->config = $config;
+        if(!$this->isDummy()) {
+            $this->initializeCas();
+        }
+//        $this->setsess();
+    }
 
+    protected function initializeCas() {
         $this->debug();
-
-        $this->setsess();
-
-        $this->initializerCas(!empty($this->config['CAS_PROXY']) ? 'client' : $this->config['CAS_PROXY'], $this->initializer());
-
-        // Set url
-        $this->set_service_url();
-
+        $this->configureCasClient();
         // For production use set the CA certificate that is the issuer of the cert
         // on the CAS server and uncomment the line below
         $this->configureCasCert();
+        // Set url
+        $this->set_service_url();
+    }
 
-        $this->dummy_user();
+    /**
+     * Configure CAS Client|Proxy
+     * @param $method
+     */
+    protected function configureCasClient($method = 'client') {
+        phpCAS::$method(
+            $this->server_version(),
+            $this->config['CAS_HOST'],
+            (int) $this->config['CAS_PORT'],
+            $this->config['CAS_CONTENT'],
+            $this->config['CAS_CONTROL_SESSION']
+        );
+
+        if ($this->config['CAS_ENABLE_SAML']) {
+            // Handle SAML logout requests that emanate from the CAS host exclusively.
+            // Failure to restrict SAML logout requests to authorized hosts could
+            // allow denial of service attacks where at the least the server is
+            // tied up parsing bogus XML messages.
+            phpCAS::handleLogoutRequests(true, explode( ',', $this->config['CAS_REAL_HOSTS']));
+        }
+    }
+
+    /**
+     * Get phpCAS initializer server type
+     * @return mixed|string
+     */
+    protected function server_version() {
+        if ($this->config['CAS_ENABLE_SAML']) {
+            $server_type = SAML_VERSION_1_1;
+        } else {
+            // This allows the user to use 1.0, 2.0, etc as a string in the config
+            $cas_version_str = $this->config['CAS_VERSION'];
+
+            // We pull the phpCAS constant values as this is their definition
+            // PHP will generate a E_WARNING if the version string is invalid which is helpful for troubleshooting
+            $server_type = constant($cas_version_str);
+
+            if (is_null($server_type)) {
+                // This will never be null, but can be invalid values for which we need to detect and substitute.
+                phpCAS::log( 'Invalid CAS version set; Reverting to defaults' );
+                $server_type = CAS_VERSION_2_0;
+            }
+        }
+
+        return $server_type;
     }
 
     /**
      * If a fake user is set in the configuration
      */
-    protected function dummy_user() {
-        if ($this->config['CAS_MASK_DUMMY']) {
+    protected function isDummy() {
+        if (!empty($this->config['CAS_MASK_DUMMY'])) {
             $this->_maskdummy = true;
-            phpCAS::log( 'Masquerading as user: '. $this->config['CAS_MASK_DUMMY'] );
+            phpCAS::log( 'Masquerading as user: '. $this->config['CAS_MASK_DUMMY']);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * set debug and verbose
+     */
+    public function debug() {
+        if ($this->config['CAS_DEBUG'] === true) {
+            phpCAS::setDebug($this->config['CAS_DEBUG_FILE_PATH']);
+            phpCAS::log( 'Loaded configuration:' . PHP_EOL . serialize($this->config) );
+        } else {
+            phpCAS::setDebug($this->config['CAS_DEBUG']);
+        }
+
+        phpCAS::setVerbose($this->config['CAS_VERBOSE']);
+    }
+
+    /**
+     * Configure SSL Validation
+     * Having some kind of server cert validation in production is highly recommended.
+     */
+    protected function configureCasCert() {
+        if (!empty($this->config['CAS_CERT_PATH'])) {
+            // You can also disable the validation of the certficate CN. This means the
+            // certificate must be valid but the CN of the certificate must not match the
+            // IP or hostname you are using to access the server
+            phpCAS::setCasServerCACert($this->config['CAS_CERT_PATH'], $this->config['CAS_CERT_VALIDATE_CN']);
+        } else {
+            // For quick testing you can disable SSL validation of the CAS server.
+            // THIS SETTING IS NOT RECOMMENDED FOR PRODUCTION.
+            // VALIDATING THE CAS SERVER IS CRUCIAL TO THE SECURITY OF THE CAS PROTOCOL!
+            phpCAS::setNoCasServerValidation();
         }
     }
 
@@ -90,20 +170,6 @@ class Cas {
     }
 
     /**
-     * set debug and verbose
-     */
-    public function debug() {
-        if ($this->config['CAS_DEBUG'] === true) {
-            phpCAS::setDebug($this->config['CAS_DEBUG_FILE_PATH']);
-            phpCAS::log( 'Loaded configuration:' . PHP_EOL . serialize($this->config) );
-        } else {
-            phpCAS::setDebug($this->config['CAS_DEBUG']);
-        }
-
-        phpCAS::setVerbose($this->config['CAS_VERBOSE']);
-    }
-
-    /**
      * Set up login and logout url
      */
     public function set_service_url() {
@@ -122,71 +188,8 @@ class Cas {
         phpCAS::setServerLogoutURL($this->config['CAS_LOGOUT_URL']);
     }
 
-    /**
-     * Get phpCAS initializer server type
-     * @return mixed|string
-     */
-    protected function initializer() {
-        if ($this->config['CAS_ENABLE_SAML']) {
-            $server_type = SAML_VERSION_1_1;
-        } else {
-            // This allows the user to use 1.0, 2.0, etc as a string in the config
-            $cas_version_str = $this->config['CAS_VERSION'];
 
-            // We pull the phpCAS constant values as this is their definition
-            // PHP will generate a E_WARNING if the version string is invalid which is helpful for troubleshooting
-            $server_type = constant($cas_version_str);
 
-            if (is_null($server_type)) {
-                // This will never be null, but can be invalid values for which we need to detect and substitute.
-                phpCAS::log( 'Invalid CAS version set; Reverting to defaults' );
-                $server_type = CAS_VERSION_2_0;
-            }
-        }
-
-        return $server_type;
-    }
-
-    /**
-     * Configure CAS Client|Proxy
-     *
-     * @param $method
-     */
-    protected function initializerCas($method = 'client', $initializer) {
-        phpCAS::$method(
-            $initializer,
-            $this->config['CAS_HOST'],
-            (int) $this->config['CAS_PORT'],
-            $this->config['CAS_CONTENT'],
-            $this->config['CAS_CONTROL_SESSION']
-        );
-
-        if ($this->config['CAS_ENABLE_SAML']) {
-            // Handle SAML logout requests that emanate from the CAS host exclusively.
-            // Failure to restrict SAML logout requests to authorized hosts could
-            // allow denial of service attacks where at the least the server is
-            // tied up parsing bogus XML messages.
-            phpCAS::handleLogoutRequests(true, explode( ',', $this->config['CAS_REAL_HOSTS']));
-        }
-    }
-
-    /**
-     * Configure SSL Validation
-     * Having some kind of server cert validation in production is highly recommended.
-     */
-    protected function configureCasCert() {
-        if (!empty($this->config['CAS_CERT_PATH'])) {
-            // You can also disable the validation of the certficate CN. This means the
-            // certificate must be valid but the CN of the certificate must not match the
-            // IP or hostname you are using to access the server
-            phpCAS::setCasServerCACert($this->config['CAS_CERT_PATH'], $this->config['CAS_CERT_VALIDATE_CN']);
-        } else {
-            // For quick testing you can disable SSL validation of the CAS server.
-            // THIS SETTING IS NOT RECOMMENDED FOR PRODUCTION.
-            // VALIDATING THE CAS SERVER IS CRUCIAL TO THE SECURITY OF THE CAS PROTOCOL!
-            phpCAS::setNoCasServerValidation();
-        }
-    }
 
     /**
      * Get login url
@@ -302,7 +305,7 @@ class Cas {
      * validate HTTP_USER_AGENT
      * @return bool
      */
-    private static function validateCasAuth() {
+    private static function validateSpider() {
         if (empty($_SERVER['HTTP_USER_AGENT'])) {
             return true;
         }
