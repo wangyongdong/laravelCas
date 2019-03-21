@@ -1,5 +1,5 @@
 <?php
-namespace Cas\Facades;
+namespace Laravelcas\Cas\Facades;
 
 use Illuminate\Support\Facades\Facade;
 

@@ -18,7 +18,7 @@ The easiest way to achieve the CAS service I need.
 `
 'providers' => [
      ...
-     Cas\CasServiceProvider::class,
+     Laravelcas\Cas\CasServiceProvider::class,
  ],
 `
 
@@ -27,7 +27,7 @@ The easiest way to achieve the CAS service I need.
 `
 'aliases' => [
     ...
-    'Cas' => Cas\Facades\Cas::class,
+    'Cas' => Laravelcas\Cas\Facades\Cas::class,
 ],
 `
 
@@ -39,7 +39,7 @@ The easiest way to achieve the CAS service I need.
 
 If you want to use the CAS service as a middleware for authentication, you can configure it in the $routeMiddleware `app/Http/Kernel.php`
 
-`'cas' => \Cas\Middleware\CASAuth::class,`
+`'cas' => \Laravelcas\Cas\Middleware\CASAuth::class,`
 
 AND Using middleware
 

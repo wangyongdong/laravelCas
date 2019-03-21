@@ -1,7 +1,7 @@
 {
   "name": "wangyongdong/laravelcas",
   "description": "This is laravel phpcas",
-  "keywords": ["php", "cas", "laravel", "auth"],
+  "keywords": ["php", "cas", "phpCas", "laravel", "auth"],
   "type": "library",
   "license": "MIT",
   "authors": [
@@ -12,6 +12,7 @@
   "minimum-stability": "dev",
   "require": {
     "php": ">=5.4.0",
+    "illuminate/support": "5.x",
     "wangyongdong/phpCAS": "dev-master"
   },
   "require-dev": {
@@ -29,21 +30,21 @@
   },
   "autoload": {
     "psr-4": {
-      "Cas\\": "src/"
+      "Laravelcas\\Cas\\": "src/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "Cas\\Tests\\": "src/tests/"
+      "Laravelcas\\Cas\\Tests\\": "src/tests/"
     }
   },
   "extra": {
     "laravel": {
       "providers": [
-        "Cas\\CasServiceProvider"
+        "Laravelcas\\Cas\\CasServiceProvider"
       ],
       "aliases": {
-        "Cas": "Cas\\Facades\\Cas"
+        "Cas": "Laravelcas\\Cas\\Facades\\Cas"
       }
     }
   }

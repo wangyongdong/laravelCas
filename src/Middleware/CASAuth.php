@@ -1,5 +1,5 @@
 <?php
-namespace Cas\Middleware;
+namespace Laravelcas\Cas\Middleware;
 
 use Closure;
 use Illuminate\Contracts\Auth\Guard;

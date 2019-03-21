@@ -1,5 +1,9 @@
 <?php
-namespace Cas;
+namespace Laravelcas\Cas;
+
+use Illuminate\Auth\AuthManager;
+use Illuminate\Session\SessionManager;
+use Illuminate\Support\Manager;
 
 class CasManager {
 
