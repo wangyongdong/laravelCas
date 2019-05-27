@@ -213,7 +213,7 @@ class Cas {
      * @param string $url
      * @param string $service
      */
-    public function logout($url = '', $service = '' ) {
+    public static function logout($url = '', $service = '' ) {
         if (phpCAS::isSessionAuthenticated()) {
             if (isset($_SESSION['phpCAS'])) {
                 $serialized = serialize($_SESSION['phpCAS']);
@@ -223,8 +223,6 @@ class Cas {
         $params = [];
         if ($service) {
             $params['service'] = $service;
-        } elseif ($this->config['CAS_LOGOUT_REDIRECT']) {
-            $params['service'] = $this->config['CAS_LOGOUT_REDIRECT'];
         } else {
             if(empty($url)) {
                 if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') {
