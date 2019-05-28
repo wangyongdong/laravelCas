@@ -173,7 +173,7 @@ class Cas {
     /**
      * Set up login and logout url
      */
-    public function set_service_url() {
+    protected function set_service_url() {
         // Set the login URL of the CAS server.
         if($this->config['CAS_LOGIN_URL']) {
             phpCAS::setServerLoginURL($this->config['CAS_LOGIN_URL']);
@@ -189,7 +189,14 @@ class Cas {
         phpCAS::setServerLogoutURL($this->config['CAS_LOGOUT_URL']);
     }
 
-
+    /**
+     * Checks to see is user is authenticated locally
+     *
+     * @return boolean
+     */
+    protected function isAuthenticated() {
+        return $this->_maskdummy ? true : phpCAS::isAuthenticated();
+    }
 
     /**
      * Get login url
@@ -298,15 +305,6 @@ class Cas {
         }
 
         return true;
-    }
-
-    /**
-     * Checks to see is user is authenticated locally
-     *
-     * @return boolean
-     */
-    public function isAuthenticated() {
-        return $this->_maskdummy ? true : phpCAS::isAuthenticated();
     }
 
     /**

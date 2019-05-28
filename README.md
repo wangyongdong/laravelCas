@@ -65,13 +65,13 @@ More configuration can be found in config/cas.php
 
 ### Usage
 
-- Cas::isAuthenticated();
-- Cas::checkAuthentication();
-- Cas::authenticate();
-- Cas::getUser();
-- Cas::logoutWithUrl();
-- Cas::logout_url();
-- $request->user;
+- 获取验证身份URL `Cas::login_url()`
+- 获取注销身份URL `Cas::logout_url()`
+- 执行注销操作 `Cas::logout()`
+- 获取当前CAS验证的用户 `Cas::user()`
+- 根据当前请求对用户进行身份验证 `Cas::authenticate()` 
+- 检查是否使用CAS进行身份验证 `Cas::checkAuthentication()`
+- laravel项目，获取登陆用户 `$request->user`
 
 
 ### Links
