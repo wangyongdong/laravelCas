@@ -32,6 +32,7 @@ class Cas {
 
     protected function initializeCas() {
         $this->debug();
+        $this->setsess();
         $this->configureCasClient();
         // For production use set the CA certificate that is the issuer of the cert
         // on the CAS server and uncomment the line below
@@ -190,12 +191,11 @@ class Cas {
 
 
 
-
     /**
      * Get login url
      * @return string
      */
-    public static function login_url() {
+    public function login_url() {
         return \phpCAS::getServerLoginURL();
     }
 
@@ -203,7 +203,7 @@ class Cas {
      * Get logout url
      * @return string
      */
-    public static function logout_url() {
+    public function logout_url() {
         return \phpCAS::getServerLogoutURL();
     }
 
@@ -213,7 +213,7 @@ class Cas {
      * @param string $url
      * @param string $service
      */
-    public static function logout($url = '', $service = '' ) {
+    public function logout($url = '', $service = '' ) {
         if (phpCAS::isSessionAuthenticated()) {
             if (isset($_SESSION['phpCAS'])) {
                 $serialized = serialize($_SESSION['phpCAS']);
@@ -253,6 +253,16 @@ class Cas {
         }
 
         return phpCAS::getUser();
+    }
+
+    /**
+     * getAttributes' simple wrapper
+     *
+     * @return array|null
+     */
+    public function getAttributes()
+    {
+        return phpCAS::getAttributes();
     }
 
     /**

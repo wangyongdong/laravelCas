@@ -1,6 +1,6 @@
 {
   "name": "wangyongdong/laravelcas",
-  "description": "This is laravel phpcas",
+  "description": "This is a laravel phpcas extension",
   "keywords": ["php", "cas", "phpCas", "laravel", "auth"],
   "type": "library",
   "license": "MIT",
