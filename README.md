@@ -39,14 +39,14 @@ The easiest way to achieve the CAS service I need.
 
 If you want to use the CAS service as a middleware for authentication, you can configure it in the $routeMiddleware `app/Http/Kernel.php`
 
-`'cas' => \Laravelcas\Cas\Middleware\CASAuth::class,`
+`'Laravelcas' => \Laravelcas\Cas\Middleware\CASAuth::class,`
 
 AND Using middleware
 
 ```php
 Route::group(['middleware' => ['cas']], function () {
     Route::get('/auth', function (Request $request) {
-        $user = Cas::getUser();
+        $user = Laravelcas::getUser();
         dd($user);
     });
 });
@@ -65,12 +65,12 @@ More configuration can be found in config/cas.php
 
 ### Usage
 
-- 获取验证身份URL `Cas::login_url()`
-- 获取注销身份URL `Cas::logout_url()`
-- 执行注销操作 `Cas::logout()`
-- 获取当前CAS验证的用户 `Cas::user()`
-- 根据当前请求对用户进行身份验证 `Cas::authenticate()` 
-- 检查是否使用CAS进行身份验证 `Cas::checkAuthentication()`
+- 获取验证身份URL `Laravelcas::login_url()`
+- 获取注销身份URL `Laravelcas::logout_url()`
+- 执行注销操作 `Laravelcas::logout()`
+- 获取当前CAS验证的用户 `Laravelcas::user()`
+- 根据当前请求对用户进行身份验证 `Laravelcas::authenticate()` 
+- 检查是否使用CAS进行身份验证 `Laravelcas::checkAuthentication()`
 - laravel项目，获取登陆用户 `$request->user`
 
 

@@ -245,6 +245,7 @@ class Cas {
         }
 //        phpCAS::logoutWithRedirectService($url);
         phpCAS::logout($params);
+        $_SESSION['phpCAS']['user'] = 0;
         exit;
     }
 
