@@ -33,7 +33,7 @@ The easiest way to achieve the CAS service I need.
 
 3.Publish the config file
 
-`php artisan vendor:publish --provider="Cas\CasServiceProvider"`
+`php artisan vendor:publish --provider="Laravelcas\Cas\CasServiceProvider"`
 
 4.Use CAS middleware
 
