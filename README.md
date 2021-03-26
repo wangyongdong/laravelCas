@@ -27,11 +27,11 @@ Laravel Cas Client 服务是基于 [phpCas](https://github.com/apereo/phpCAS) �
         },
         "wangyongdong/laravelcas": {
             "type": "git",
-            "url": "https://github.com/wangyongdong/laravelcas.git"
+            "url": "https://github.com/wangyongdong/laravelCas.git"
         }
     },
     "require": {
-      "medlive/laravel-cas": "^3.0"
+      "wangyongdong/laravelcas": "^3.0"
     },
     "config": {
         "secure-http": false
