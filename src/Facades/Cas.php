@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static bool hasAttribute($key)
  * @method static mixed getAttributes()
  * @method static setAttributes(array $attr)
- * @see \Medlive\LaravelCas\Cas
+ * @see \Wangyongdong\LaravelCas\Cas
  */
 class Cas extends Facade {
     /**

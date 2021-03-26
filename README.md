@@ -11,7 +11,7 @@ Laravel Cas Client 服务是基于 [phpCas](https://github.com/apereo/phpCAS) �
 
 ### 版本说明
 
-- 当前版本稳定版本为 [laravel-cas 3.0.2](https://github.com/wangyongdong/laravelcas)
+- 当前版本稳定版本为 [laravel-cas 1.0.2](https://github.com/wangyongdong/laravelcas)
     - 此版本改动较大，需更新老版本代码
 
 ## 安装
@@ -41,7 +41,7 @@ Laravel Cas Client 服务是基于 [phpCas](https://github.com/apereo/phpCAS) �
 
 ### 执行安装
 
- - `composer install` 或 `composer require "wangyongdong/laravelcas:3.0.2"`
+ - `composer install` 或 `composer require "wangyongdong/laravelcas:1.0.2"`
 
 ### 配置 `provider` 和 `aliases`
 
@@ -88,7 +88,7 @@ Laravel Cas Client 服务是基于 [phpCas](https://github.com/apereo/phpCAS) �
 如果要将CAS服务用作身份验证的中间件，则可以在 `app/Http/Kernel.php`中的 `$routeMiddleware` 对其进行配置。
 
 ```php
-'LaravelCasMiddleware' => \Medlive\LaravelCas\Middleware\CASAuth::class,
+'LaravelCasMiddleware' => \Wangyongdong\LaravelCas\Middleware\CASAuth::class,
 ```
 
 ```php
@@ -117,7 +117,7 @@ Route::group(['middleware' => ['LaravelCasMiddleware']], function () {
 - 兼容 `composer2.0`，优化命名空间
 - 支持重定向注销登陆
 - 添加支持中间件的使用
-- 更新包 [cas-client](http://git.kydev.net/medlive/pkg/cas-client)，兼容 `http` 和 `https`的判断
+- 更新包 [phpCAS](https://github.com/wangyongdong/phpCAS.git)，兼容 `http` 和 `https`的判断
 - 支持配置文件，对 `phpCAS` 客户端进行配置
 
 ## 问题
