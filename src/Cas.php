@@ -1,5 +1,5 @@
 <?php
-namespace Laravelcas\Cas;
+namespace Wangyongdong\LaravelCas;
 
 use phpCAS;
 
@@ -16,6 +16,11 @@ class Cas {
     protected $_maskdummy = false;
 
     /**
+     * Attributes used for overriding or masquerading.
+     */
+    protected $_attributes = [];
+
+    /**
      * @param array $config
      */
     public function __construct(array $config) {
@@ -24,21 +29,29 @@ class Cas {
         }
 
         $this->config = $config;
+
         if(!$this->isDummy()) {
             $this->initializeCas();
         }
-//        $this->setsess();
     }
 
+    /**
+     * Initial configuration Cas Client
+     */
     protected function initializeCas() {
-        $this->debug();
-        $this->setsess();
+        // Enable debugging && Enable verbose error messages. Disable in production!
+        $this->setDebug();
+
+//        $this->setSessionInfo();
+
+        // Initialize phpCAS
         $this->configureCasClient();
-        // For production use set the CA certificate that is the issuer of the cert
-        // on the CAS server and uncomment the line below
+
+        // For production use set the CA certificate that is the issuer of the cert on the CAS server and uncomment the line below
         $this->configureCasCert();
-        // Set url
-        $this->set_service_url();
+
+        // Set some urls
+        $this->setServiceUrl();
     }
 
     /**
@@ -47,7 +60,7 @@ class Cas {
      */
     protected function configureCasClient($method = 'client') {
         phpCAS::$method(
-            $this->server_version(),
+            $this->serverVersion(),
             $this->config['CAS_HOST'],
             (int) $this->config['CAS_PORT'],
             $this->config['CAS_CONTENT'],
@@ -67,7 +80,7 @@ class Cas {
      * Get phpCAS initializer server type
      * @return mixed|string
      */
-    protected function server_version() {
+    protected function serverVersion() {
         if ($this->config['CAS_ENABLE_SAML']) {
             $server_type = SAML_VERSION_1_1;
         } else {
@@ -90,6 +103,7 @@ class Cas {
 
     /**
      * If a fake user is set in the configuration
+     * @return bool
      */
     protected function isDummy() {
         if (!empty($this->config['CAS_MASK_DUMMY'])) {
@@ -103,12 +117,15 @@ class Cas {
     /**
      * set debug and verbose
      */
-    public function debug() {
-        if ($this->config['CAS_DEBUG'] === true) {
-            phpCAS::setDebug($this->config['CAS_DEBUG_FILE_PATH']);
-            phpCAS::log( 'Loaded configuration:' . PHP_EOL . serialize($this->config) );
-        } else {
-            phpCAS::setDebug($this->config['CAS_DEBUG']);
+    protected function setDebug() {
+        try {
+            if ($this->config['CAS_DEBUG'] === true) {
+                phpCAS::setDebug($this->config['CAS_DEBUG_FILE_PATH']);
+                phpCAS::log( 'Loaded configuration:' . PHP_EOL . serialize($this->config) );
+            }
+        } catch (\Exception $e) {
+            // Fix for depreciation of setDebug
+            phpCAS::setLogger();
         }
 
         phpCAS::setVerbose($this->config['CAS_VERBOSE']);
@@ -133,30 +150,45 @@ class Cas {
     }
 
     /**
-     * set session and cookie
+     * Verify that HTTP_USER_AGENT is a spider
+     * @return bool
      */
-    protected function setsess() {
+    protected static function validateSpider() {
+        $agent = $_SERVER['HTTP_USER_AGENT'];
+        if (empty($agent)) {
+            return true;
+        }
+        $spiders = array(
+            'Googlebot', 'msnbot', 'Baiduspider', 'bingbot', 'Sogou web spider', 'Sogou inst spider', 'Sogou Pic Spider',
+            'JikeSpider', 'Sosospider', 'Slurp', '360Spider', 'YodaoBot', 'OutfoxBot', 'fast-webcrawler',
+            'lycos_spider', 'scooter', 'ia_archiver', 'MJ12bot', 'AhrefsBot', 'Yisouspider',
+        );
+        foreach($spiders as $spider) {
+            if (stristr($agent, $spider)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Set session and cookie
+     */
+    protected function setSessionInfo() {
         // Calling the session_name() function generates an error after the content of the cookie is sent in the HTTP response
         // In php7.2, you need to use session_start() before
         // More information：php.net/manual/zh/function.session-name.php
-        if (!headers_sent() && session_id() == "" ) {
-            try {
-                if(!file_exists($this->config['SESSION_PATH'].'/.gitignore')) {
-                    mkdir($this->config['SESSION_PATH'], 0777, true);
-                    file_put_contents($this->config['SESSION_PATH'].'/.gitignore',"*\n!.gitignore");
-                }
-            } catch (\Exception $e) {
-                throw new \Exception('Cannot create file： ' . $this->config['SESSION_PATH'].'/.gitignore');
-            }
+        if (!headers_sent() && session_id() == "") {
+//            try {
+//                if(!file_exists($this->config['SESSION_PATH'].'/.gitignore')) {
+//                    mkdir($this->config['SESSION_PATH'], 0777, true);
+//                    file_put_contents($this->config['SESSION_PATH'].'/.gitignore',"*\n!.gitignore");
+//                }
+//            } catch (\Exception $e) {
+//                throw new \Exception('Cannot create file： ' . $this->config['SESSION_PATH'].'/.gitignore');
+//            }
 
             session_name($this->config['SESSION_NAME']);
-
-            // set session_info
-            ini_set('session.gc_probability', 1);
-            ini_set('session.gc_divisor', 1000);
-            ini_set('session.save_path', $this->config['SESSION_PATH']);
-            ini_set('session.name', $this->config['SESSION_NAME']);
-            ini_set('session.gc_maxlifetime', $this->config['SESSION_MAX_LIFE']);
 
             // Harden session cookie to prevent some attacks on the cookie (e.g. XSS)
             $currentCookieParams = session_get_cookie_params();
@@ -173,12 +205,11 @@ class Cas {
     /**
      * Set up login and logout url
      */
-    protected function set_service_url() {
+    protected function setServiceUrl() {
         // Set the login URL of the CAS server.
         if($this->config['CAS_LOGIN_URL']) {
             phpCAS::setServerLoginURL($this->config['CAS_LOGIN_URL']);
         }
-
         // If specified, this will override the URL the user will be returning to.
         if($this->config['CAS_REDIRECT_PATH']) {
             // Set the fixed URL that will be set as the CAS service parameter.
@@ -186,16 +217,20 @@ class Cas {
             phpCAS::setFixedServiceURL( $this->config['CAS_REDIRECT_PATH'] );
         }
 
+        // 设置 登出 url
         phpCAS::setServerLogoutURL($this->config['CAS_LOGOUT_URL']);
+
+        // 设置 validate url
+        phpCAS::setServerServiceValidateURL($this->config['CAS_VALIDATE_URL']);
     }
 
     /**
-     * Checks to see is user is authenticated locally
+     * Returns the current config.
      *
-     * @return boolean
+     * @return array
      */
-    protected function isAuthenticated() {
-        return $this->_maskdummy ? true : phpCAS::isAuthenticated();
+    public function getConfig() {
+        return $this->config;
     }
 
     /**
@@ -217,10 +252,9 @@ class Cas {
     /**
      * Logout of the CAS session and redirect users.
      *
-     * @param string $url
      * @param string $service
      */
-    public function logout($url = '', $service = '' ) {
+    public function logout($service = '' ) {
         if (phpCAS::isSessionAuthenticated()) {
             if (isset($_SESSION['phpCAS'])) {
                 $serialized = serialize($_SESSION['phpCAS']);
@@ -228,23 +262,25 @@ class Cas {
             }
         }
         $params = [];
+
+        // set logout url
+        $params['url'] = \phpCAS::getServerLogoutURL();
+
+        // set logout redirect url
         if ($service) {
             $params['service'] = $service;
+        } else if($this->config['CAS_LOGOUT_REDIRECT']) {
+            $params['service'] = $this->config['CAS_LOGOUT_REDIRECT'];
         } else {
-            if(empty($url)) {
-                if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') {
-                    $params['service'] = 'https://';
-                } else {
-                    $params['service'] = 'http://';
-                }
-                $params['service'] .= $_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF'];
+            if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') {
+                $params['service'] = 'https://';
+            } else {
+                $params['service'] = 'http://';
             }
+            $params['service'] .= $_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF'];
         }
-        if ($url) {
-            $params['url'] = $url;
-        }
-//        phpCAS::logoutWithRedirectService($url);
-        phpCAS::logout($params);
+
+        \phpCAS::logout($params);
         $_SESSION['phpCAS']['user'] = 0;
         exit;
     }
@@ -252,46 +288,39 @@ class Cas {
     /**
      * Retrieve authenticated credentials.
      * Returns either the masqueraded account or the phpCAS user.
-     *
-     * @return string
+     * 获取用户id
+     * @return int
      */
     public function user() {
-        if ($this->_maskdummy) {
+        if ($this->isDummy()) {
             return $this->config['CAS_MASK_DUMMY'];
         }
-
-        return phpCAS::getUser();
+        // 重新去cas服务器验证后，自动获取到user
+        $auth = $this->checkAuthentication();
+        if(!$auth) {
+            return 0;
+        }
+        $user = phpCAS::getUser();
+        return intval($user);
     }
 
     /**
-     * getAttributes' simple wrapper
-     *
-     * @return array|null
-     */
-    public function getAttributes()
-    {
-        return phpCAS::getAttributes();
-    }
-
-    /**
-     * Authenticates the user based on the current request.
+     * Checks to see is user is authenticated locally
+     * 不自动跳转登陆
      *
      * @return bool
      */
-    public function authenticate() {
-        if ($this->_maskdummy) {
-            return true;
-        }
-        return phpCAS::forceAuthentication();
+    public function isAuthenticated() {
+        return $this->isDummy() ? true : phpCAS::isAuthenticated();
     }
 
     /**
      * Checks to see is user is globally in CAS
-     *
-     * @return boolean
+     * 不自动跳转登陆
+     * @return bool
      */
     public function checkAuthentication() {
-        if($this->_maskdummy) {
+        if($this->isDummy()) {
             return true;
         }
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -299,7 +328,7 @@ class Cas {
             // 2.直接跨域POST请求，可能发生身份取得不正确的问题
             $auth = $this->isAuthenticated();
         } else {
-             $auth = phpCAS::checkAuthentication();
+            $auth = phpCAS::checkAuthentication();
         }
         if (!$auth) {
             return false;
@@ -309,42 +338,72 @@ class Cas {
     }
 
     /**
-     * validate HTTP_USER_AGENT
+     * Authenticates the user based on the current request.
+     * 强制登陆
      * @return bool
      */
-    private static function validateSpider() {
-        if (empty($_SERVER['HTTP_USER_AGENT'])) {
+    public function forceAuthentication() {
+        if ($this->isDummy()) {
             return true;
         }
-        $agent = $_SERVER['HTTP_USER_AGENT'];
-        $spiders = array(
-            'Googlebot',
-            'msnbot',
-            'Baiduspider',
-            'bingbot',
-            'Sogou web spider',
-            'Sogou inst spider',
-            'Sogou Pic Spider',
-            'JikeSpider',
-            'Sosospider',
-            'Slurp',
-            '360Spider',
-            'YodaoBot',
-            'OutfoxBot',
-            'fast-webcrawler',
-            'lycos_spider',
-            'scooter',
-            'ia_archiver',
-            'MJ12bot',
-            'AhrefsBot',
-            'Yisouspider',
-        );
-        foreach($spiders as $spider) {
-            if (stristr($agent, $spider)) {
-                return false;
-            }
+        return phpCAS::forceAuthentication();
+    }
+
+    /**
+     * Retrieve a specific attribute by key name.  The
+     * attribute returned can be either a string or
+     * an array based on matches.
+     *
+     * @param $key
+     *
+     * @return mixed
+     */
+    public function getAttribute($key) {
+        if (!$this->isDummy()) {
+            return phpCAS::getAttribute($key);
         }
-        return true;
+        if ($this->hasAttribute($key)) {
+            return $this->_attributes[$key];
+        }
+
+        return;
+    }
+
+    /**
+     * Get the attributes for for the currently connected user. This method
+     * can only be called after forceAuthentication() or an error wil be thrown.
+     *
+     * @return mixed
+     */
+    public function getAttributes() {
+        // We don't error check because phpCAS has its own error handling.
+        return $this->isDummy() ? $this->_attributes : phpCAS::getAttributes();
+    }
+
+    /**
+     * Check for the existence of a key in attributes.
+     *
+     * @param $key
+     *
+     * @return boolean
+     */
+    public function hasAttribute($key) {
+        if($this->isDummy()) {
+            return array_key_exists($key, $this->_attributes);
+        }
+
+        return phpCAS::hasAttribute($key);
+    }
+
+    /**
+     * Set the attributes for a user when masquerading. This
+     * method has no effect when not masquerading.
+     *
+     * @param array $attr : the attributes of the user.
+     */
+    public function setAttributes(array $attr) {
+        $this->_attributes = $attr;
+        phpCAS::log( 'Forced setting of user masquerading attributes: ' . serialize( $attr ) );
     }
 
     /**

@@ -1,78 +1,142 @@
-## laravelCAS
-CAS Authentication for Laravel 5.x
+# laravel-cas
 
-This is a simple CAS service based on "PHP CAS" developed for Laravel5.*. 
-The package is built for your own use and many features are not compatible. 
-The easiest way to achieve the CAS service I need.
+Laravel Cas Client 服务是基于 [phpCas](https://github.com/apereo/phpCAS) 基础上进行封装
 
-## Installation
+## 支持
 
-`composer require wangyongdong/laravelcas`
+- `laravel5.5+`
+- `laravel6.x`
+- `laravel7.x`
+- `laravel8.x`
 
+### 版本说明
 
-### Setup
-> NOTE : This package supports the auto-discovery feature of Laravel 5.5, So you can skip this section if you're using Laravel 5.5.
+- 当前版本稳定版本为 [laravel-cas 3.0.2](https://github.com/wangyongdong/laravelcas)
+    - 此版本改动较大，需更新老版本代码
 
-1.register the service provider in config/app.php
+## 安装
+
+### 编辑 `Composer.json`
+
+```json
+{
+    "repositories": {
+        "wangyongdong/phpcas": {
+            "type": "git",
+            "url": "https://github.com/wangyongdong/phpCAS.git"
+        },
+        "wangyongdong/laravelcas": {
+            "type": "git",
+            "url": "https://github.com/wangyongdong/laravelcas.git"
+        }
+    },
+    "require": {
+      "medlive/laravel-cas": "^3.0"
+    },
+    "config": {
+        "secure-http": false
+    } 
+}
+```
+
+### 执行安装
+
+ - `composer install` 或 `composer require "wangyongdong/laravelcas:3.0.2"`
+
+### 配置 `provider` 和 `aliases`
+
+> NOTE : 该软件包支持Laravel 5.5的自动发现功能，因此，如果您使用的是Laravel 5.5，则可以跳过本节。
+
+#### 1. 配置 `provider `
 
 `
 'providers' => [
-     ...
-     Laravelcas\Cas\CasServiceProvider::class,
+     Wangyongdong\LaravelCas\CasServiceProvider::class
  ],
 `
 
-2.Optional: And the facade in the aliases array:
+#### 2. 配置 `aliases`
 
 `
 'aliases' => [
-    ...
-    'Laravelcas' => Laravelcas\Cas\Facades\Cas::class,
+    ... 
+    'Laravelcas' => Wangyongdong\LaravelCas\Facades\Cas::class,
 ],
 `
 
-3.Publish the config file
+### 发布配置文件
 
-`php artisan vendor:publish --provider="Laravelcas\Cas\CasServiceProvider"`
+`php artisan vendor:publish --provider="Wangyongdong\LaravelCas\CasServiceProvider"`
 
-4.Use CAS middleware
+#### 配置文件
 
-If you want to use the CAS service as a middleware for authentication, you can configure it in the $routeMiddleware `app/Http/Kernel.php`
+发布完成后，将自动生成一个名为 `config/cas.php` 的配置文件。
 
-`'laravelcasmiddle' => \Laravelcas\Cas\Middleware\CASAuth::class,`
+一般来说，仅需配置一下几项即可
 
-AND Using middleware
+- 配置 `laravel` 项目根目录下 `.env`文件，修改 `APP_URL` 的值
+
+- `CAS_HOST`: CAS服务端主域名
+- `CAS_CONTENT`: CAS服务路径名称
+- `CAS_PORT`: CAS服务端口
+- `CAS_LOGOUT_URL`: CAS服务退出url地址
+
+更多配置项在文件 `config/cas.php` 中查看  
+
+### 使用中间件
+
+如果要将CAS服务用作身份验证的中间件，则可以在 `app/Http/Kernel.php`中的 `$routeMiddleware` 对其进行配置。
 
 ```php
-Route::group(['middleware' => ['laravelcasmiddle']], function () {
-    Route::get('/auth', function (Request $request) {
-        $user = Laravelcas::getUser();
+'LaravelCasMiddleware' => \Medlive\LaravelCas\Middleware\CASAuth::class,
+```
+
+```php
+Route::group(['middleware' => ['LaravelCasMiddleware']], function () {
+    Route::get('/login/auth', function (Illuminate\Http\Request $request) {
+        $user = $request->userid;
         dd($user);
     });
 });
 ```
 
-### Configuration
+### 支持方法
 
-After the publish is completed, a configuration file named `config/cas.php` is automatically generated.
+- 验证是否登录 `LaravelCas::checkAuthentication()`
+- 强制执行登录 `LaravelCas::forceAuthentication()`
+- 获取登录地址 `LaravelCas::login_url()`
+- 获取退出地址 `LaravelCas::logout_url()`
+- 执行退出 `LaravelCas::logout($service = '')`
+- 获取当前登录用户id `LaravelCas::user()`
+- Laravel项目获取登陆用户id：`$request->userid` or `$request->session()->get('userid')`
 
-- CAS_HOST: Full Hostname of your CAS Server.
-- CAS_CONTENT: Context of the CAS Server.
-- CAS_PORT: Port of your CAS server. 
-- CAS_VERSION: CAS version,Usually use the default.
+## Updates
 
-More configuration can be found in config/cas.php
+- 支持 `laravel6.x` `laravel7.x` `laravel8.x`
+- 更新版本 [phpCAS 1.3.9](https://apereo.github.io/phpCAS/)，解决 `phpCAS error: phpCAS::client(): ErrorException: "continue" targeting switch is equivalent to "break". Did you mean to use "continue 2"?` 问题
+- 兼容 `composer2.0`，优化命名空间
+- 支持重定向注销登陆
+- 添加支持中间件的使用
+- 更新包 [cas-client](http://git.kydev.net/medlive/pkg/cas-client)，兼容 `http` 和 `https`的判断
+- 支持配置文件，对 `phpCAS` 客户端进行配置
 
-### Usage
+## 问题
 
-- 获取验证身份URL `Laravelcas::login_url()`
-- 获取注销身份URL `Laravelcas::logout_url()`
-- 执行注销操作 `Laravelcas::logout()`
-- 获取当前CAS验证的用户 `Laravelcas::user()`
-- 根据当前请求对用户进行身份验证 `Laravelcas::authenticate()` 
-- 检查是否使用CAS进行身份验证 `Laravelcas::checkAuthentication()`
-- laravel项目，获取登陆用户 `$request->user`
+1. `Parse error: syntax error, unexpected '?', expecting variable (T_VARIABLE)`
+ - 报错版本：`laravel5.5` `php7.0.9`
+ - 问题原因：包 `symfony/translation` 使用 `php7.1` 新增特性 [可为空（Nullable）类型](https://www.php.net/manual/zh/migration71.new-features.php) 导致报错
+ - 解决办法：升级 `laravel` 版本，或升级 `php` 版本
 
+2. `Declaration of Illuminate\Container\Container::get($id) must be compatible with Psr\Container\ContainerInterface::get(string $id) in`
+ - 报错版本：
+    - `laravel5.6` `php7.1.9`
+    - `laravel5.7` `php7.1.9`
+    - `laravel5.8` `php7.1.9`
+ - 问题原因：因 `laravel5.6+` 版本中引用的扩展包里，使用了 `php7.2` 新特性 [参数类型声明]()，导致报错   
+ - 解决办法：
+    - 1. 升级到 `php7.2+`
+    - 2. 修改`Illuminate\Container\Container` 592行，161行。改为 `public function get(string $id)`，`public function has(string $id)`
 
-### Links
+## Links
+
 [PHPCAS](https://github.com/apereo/phpCAS)

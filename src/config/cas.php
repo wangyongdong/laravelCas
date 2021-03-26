@@ -9,7 +9,7 @@ return [
      * Enable debugging
      */
     'CAS_DEBUG' => true,
-    'CAS_DEBUG_FILE_PATH' => storage_path() . 'phpCAS.log',
+    'CAS_DEBUG_FILE_PATH' => storage_path('logs') . '/phpCAS.log',
 
     /**
      * Enable verbose error messages. Disable in production!
@@ -44,6 +44,11 @@ return [
     'CAS_PROXY' => 'client', //proxy
 
     /**
+     * validate url
+     */
+    'CAS_VALIDATE_URL' => '',
+
+    /**
      * Set the login URL of the CAS server.
      */
     'CAS_LOGIN_URL' => '',
@@ -54,9 +59,9 @@ return [
     'CAS_LOGOUT_URL' => '',
 
     /**
-     * The Cas Service Redirect url
+     * Set the logout The Cas Service Redirect url
      */
-    'CAS_LOGOUT_REDIRECT' => env('APP_DOMAIN'),
+    'CAS_LOGOUT_REDIRECT' => env('APP_URL'),
 
     /**
      * Set the fixed URL that will be set as the CAS service parameter. When this
@@ -67,7 +72,7 @@ return [
     /**
      * Virtual user
      */
-    'CAS_MASK_DUMMY' => '',
+    'CAS_MASK_DUMMY' => 0,
 
     /**
      * SAML protocol
@@ -78,7 +83,7 @@ return [
      * Allow phpCAS to change the session_id (Single Sign Out/handleLogoutRequests is based on that change)
      * true : allow to change the session_id(), false session_id won't be change and logout won't be handle because of that
      */
-    'CAS_CONTROL_SESSION'  => false,
+    'CAS_CONTROL_SESSION'  => true,
 
     /**
      * Path to the ca chain that issued the cas server certificate
@@ -100,8 +105,8 @@ return [
     //        SESSION Configuration      //
     ///////////////////////////////////////
 
-    'SESSION_NAME' => 'PHPSESSION',
+    'SESSION_NAME' => 'sess',
     'SESSION_PATH' => storage_path('cas'),
     'SESSION_MAX_LIFE' => '86400',
-    'SESSION_DOMAIN' => env('APP_DOMAIN'),
+    'SESSION_DOMAIN' => env('APP_URL'),
 ];

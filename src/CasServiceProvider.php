@@ -1,5 +1,5 @@
 <?php
-namespace Laravelcas\Cas;
+namespace Wangyongdong\LaravelCas;
 
 use Illuminate\Support\ServiceProvider;
 

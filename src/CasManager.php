@@ -1,5 +1,5 @@
 <?php
-namespace Laravelcas\Cas;
+namespace Wangyongdong\LaravelCas;
 
 use Illuminate\Auth\AuthManager;
 use Illuminate\Session\SessionManager;

@@ -1,3 +1,4 @@
 /vendor
 composer.lock
 /src/config/cas_backup.php
+.idea

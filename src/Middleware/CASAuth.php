@@ -1,8 +1,9 @@
 <?php
-namespace Laravelcas\Cas\Middleware;
+namespace Wangyongdong\LaravelCas\Middleware;
 
 use Closure;
 use Illuminate\Contracts\Auth\Guard;
+use Illuminate\Foundation\Application;
 
 class CASAuth
 {
@@ -13,7 +14,7 @@ class CASAuth
     protected $auth;
 
     /**
-     * @var \Illuminate\Foundation\Application|mixed
+     * @var Application|mixed
      */
     protected $cas;
 
@@ -34,14 +35,15 @@ class CASAuth
     {
         if($this->cas->checkAuthentication())
         {
-            $request->offsetSet('user', $this->cas->user());
-            // 存到 session...
+            $request->offsetSet('userid', $this->cas->user());
+            // Store the user credentials in a Laravel managed session
             session(['userid' => $this->cas->user()]);
+            session()->put('userid', $this->cas->user());
         } else {
             if ($request->ajax() || $request->wantsJson()) {
                 return response('Unauthorized.', 401);
             }
-            $this->cas->authenticate();
+            $this->cas->forceAuthentication();
         }
 
         return $next($request);
