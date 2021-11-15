@@ -70,6 +70,12 @@ return [
     'CAS_REDIRECT_PATH' => '',
 
     /**
+     * The "real" hosts of clustered cas server that send SAML logout messages
+     * Assumes the cas server is load balanced across multiple hosts
+     */
+    'CAS_REAL_HOSTS'  => array(env('CAS_HOST')),
+
+    /**
      * Virtual user
      */
     'CAS_MASK_DUMMY' => 0,
@@ -94,12 +100,6 @@ return [
      * Validate CN in certificate (default true)
      */
     'CAS_CERT_VALIDATE_CN' => true,
-
-    /**
-     * The "real" hosts of clustered cas server that send SAML logout messages
-     * Assumes the cas server is load balanced across multiple hosts
-     */
-    'CAS_REAL_HOSTS'  => array('cas-real-1.example.com', 'cas-real-2.example.com'),
 
     ///////////////////////////////////////
     //        SESSION Configuration      //

@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static array getConfig()
  * @method static string login_url()
  * @method static string logout_url()
+ * @method static validateLogout()
  * @method static logout($service = '')
  * @method static int user()
  * @method static bool isAuthenticated()

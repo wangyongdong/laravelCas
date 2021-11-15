@@ -1,7 +1,10 @@
 <?php
 namespace Wangyongdong\LaravelCas;
 
+use Couchbase\Exception;
 use phpCAS;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
 
 class Cas {
 
@@ -52,6 +55,9 @@ class Cas {
 
         // Set some urls
         $this->setServiceUrl();
+
+        // validateLogout
+        $this->validateLogout();
     }
 
     /**
@@ -118,17 +124,29 @@ class Cas {
      * set debug and verbose
      */
     protected function setDebug() {
-        try {
-            if ($this->config['CAS_DEBUG'] === true) {
+        if ($this->config['CAS_DEBUG']) {
+            try {
                 phpCAS::setDebug($this->config['CAS_DEBUG_FILE_PATH']);
-                phpCAS::log( 'Loaded configuration:' . PHP_EOL . serialize($this->config) );
-            }
-        } catch (\Exception $e) {
-            // Fix for depreciation of setDebug
-            phpCAS::setLogger();
-        }
+            } catch (\Exception $e) {
+                if(!class_exists("\\Monolog\\Logger") || !class_exists("\\Monolog\\Handler\\StreamHandler")) {
+                    $logger = null;
+                } else {
+                    // Fix for depreciation of setDebug
+                    // Does the file exist
+                    if (!file_exists($this->config['CAS_DEBUG_FILE_PATH'])) {
+                        fopen($this->config['CAS_DEBUG_FILE_PATH'], "w");
+                    }
+                    // Instantiate the log class (the log header information here can be customized, so that you can quickly find out the log you need)
+                    $logger = new \Monolog\Logger('LaravelCas');
+                    // Write
+                    $logger->pushHandler(new \Monolog\Handler\StreamHandler($this->config['CAS_DEBUG_FILE_PATH'], \Monolog\Logger::INFO));
+                }
 
-        phpCAS::setVerbose($this->config['CAS_VERBOSE']);
+                phpCAS::setLogger($logger);
+            }
+            phpCAS::log( 'Loaded configuration:' . PHP_EOL . serialize($this->config));
+            phpCAS::setVerbose($this->config['CAS_VERBOSE']);
+        }
     }
 
     /**
@@ -250,6 +268,22 @@ class Cas {
     }
 
     /**
+     * Handle logout requests.
+     * Verify in any request
+     */
+    public function validateLogout() {
+        if (empty($_POST['logoutRequest'])) {
+            return;
+        }
+        // 仅取 CAS_REAL_HOSTS 中的 HOST 部分
+        \phpCAS::handleLogoutRequests(true, array_map(function($url) {
+            return parse_url($url, PHP_URL_HOST);
+        },$this->config['CAS_REAL_HOSTS']));
+
+        die();
+    }
+
+    /**
      * Logout of the CAS session and redirect users.
      *
      * @param string $service
@@ -318,6 +352,7 @@ class Cas {
      * Checks to see is user is globally in CAS
      * 不自动跳转登陆
      * @return bool
+     * @throws \Exception
      */
     public function checkAuthentication() {
         if($this->isDummy()) {
@@ -328,7 +363,13 @@ class Cas {
             // 2.直接跨域POST请求，可能发生身份取得不正确的问题
             $auth = $this->isAuthenticated();
         } else {
-            $auth = phpCAS::checkAuthentication();
+            try {
+                $auth = phpCAS::checkAuthentication();
+            }
+            catch(\Exception $e) {
+                throw new \Exception();
+            }
+//            $auth = phpCAS::checkAuthentication();
         }
         if (!$auth) {
             return false;

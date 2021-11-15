@@ -11,8 +11,11 @@ Laravel Cas Client 服务是基于 [phpCas](https://github.com/apereo/phpCAS) �
 
 ### 版本说明
 
-- 当前版本稳定版本为 [laravel-cas 1.0.2](https://github.com/wangyongdong/laravelcas)
+- 当前版本稳定版本为 [laravel-cas 1.0.4](https://github.com/wangyongdong/laravelcas)
+    - `1.0.3` 更新同步退出的问题
+    - `1.0.4` 更新 debug 日志打印功能
     - 此版本改动较大，需更新老版本代码
+
 
 ## 安装
 
@@ -41,7 +44,7 @@ Laravel Cas Client 服务是基于 [phpCas](https://github.com/apereo/phpCAS) �
 
 ### 执行安装
 
- - `composer install` 或 `composer require "wangyongdong/laravelcas:1.0.2"`
+ - `composer install` 或 `composer require "wangyongdong/laravelcas:1.0.4"`
 
 ### 配置 `provider` 和 `aliases`
 
@@ -80,6 +83,7 @@ Laravel Cas Client 服务是基于 [phpCas](https://github.com/apereo/phpCAS) �
 - `CAS_CONTENT`: CAS服务路径名称
 - `CAS_PORT`: CAS服务端口
 - `CAS_LOGOUT_URL`: CAS服务退出url地址
+- `CAS_REAL_HOSTS`: 同 `CAS_HOST`
 
 更多配置项在文件 `config/cas.php` 中查看  
 
@@ -99,6 +103,21 @@ Route::group(['middleware' => ['LaravelCasMiddleware']], function () {
     });
 });
 ```
+
+### Laravel 必须配置项
+
+- 若同步退出时 CAS 服务器请求地址为根目录则需要做如下修改：
+
+1. 路由修改支持post，示例：`Route::any('/', 'HomeController@index')->name('home.index');`
+2. http 419问题，[参考链接](https://blog.csdn.net/u011415782/article/details/77676632)
+   	1. 在 `app\Http\Kernel.php` 中，注释 `VerifyCsrfToken` 中间件
+   	2. 添加白名单， `app\Http\Middleware\VerifyCsrfToken.php` 文件中
+   	```php
+   	protected $except = [
+       '/'
+   ];
+   	```
+3. 具体目录根据请求地址来调整   	
 
 ### 支持方法
 
@@ -136,6 +155,9 @@ Route::group(['middleware' => ['LaravelCasMiddleware']], function () {
  - 解决办法：
     - 1. 升级到 `php7.2+`
     - 2. 修改`Illuminate\Container\Container` 592行，161行。改为 `public function get(string $id)`，`public function has(string $id)`
+
+3. laravel 不能同步退出问题
+
 
 ## Links
 
