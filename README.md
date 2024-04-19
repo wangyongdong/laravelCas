@@ -15,7 +15,7 @@ Laravel Cas Client 服务是基于 [phpCas](https://github.com/apereo/phpCAS) �
     - `1.0.3` 更新同步退出的问题
     - `1.0.4` 更新 debug 日志打印功能
     - 此版本改动较大，需更新老版本代码
-
+    - `1.0.5` 更改 auth 后回跳附带端口的问题
 
 ## 安装
 

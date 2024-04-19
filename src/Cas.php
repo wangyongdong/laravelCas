@@ -1,12 +1,16 @@
 <?php
-namespace Wangyongdong\LaravelCas;
+
+namespace Medlive\LaravelCas;
 
 use Couchbase\Exception;
 use phpCAS;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 
-class Cas {
+class Cas
+{
+
+    protected $error = 'no initialize';
 
     /**
      * Cas" configuration settings array
@@ -23,38 +27,41 @@ class Cas {
      */
     protected $_attributes = [];
 
+    protected $auth;
+
+    protected $userid;
+
     /**
      * @param array $config
      */
-    public function __construct(array $config) {
-        if(!$this->validateSpider()) {
-            return false;
-        }
-
+    public function __construct(array $config)
+    {
         $this->config = $config;
 
-        if(!$this->isDummy()) {
-            $this->initializeCas();
+        if (!$this->validateSpider()) {
+            $this->setAuth(false);
+            $this->setUser(0);
         }
+
+        if ($dummy = $this->config['CAS_MASK_DUMMY']) {
+            $this->setAuth(true);
+            $this->setUser($dummy);
+        }
+
+        $this->initializeCas();
     }
 
     /**
      * Initial configuration Cas Client
      */
-    protected function initializeCas() {
-        // Enable debugging && Enable verbose error messages. Disable in production!
-        $this->setDebug();
+    public function initializeCas()
+    {
+        if (!phpCAS::isInitialized()) {
+            // Initialize phpCAS
+            $this->configureCasClient();
+        }
 
-//        $this->setSessionInfo();
-
-        // Initialize phpCAS
-        $this->configureCasClient();
-
-        // For production use set the CA certificate that is the issuer of the cert on the CAS server and uncomment the line below
-        $this->configureCasCert();
-
-        // Set some urls
-        $this->setServiceUrl();
+        $this->error = 'initialize cas';
 
         // validateLogout
         $this->validateLogout();
@@ -64,29 +71,41 @@ class Cas {
      * Configure CAS Client|Proxy
      * @param $method
      */
-    protected function configureCasClient($method = 'client') {
+    protected function configureCasClient($method = 'client')
+    {
+        $this->setDebug();
+
         phpCAS::$method(
             $this->serverVersion(),
             $this->config['CAS_HOST'],
-            (int) $this->config['CAS_PORT'],
+            (int)$this->config['CAS_PORT'],
             $this->config['CAS_CONTENT'],
             $this->config['CAS_CONTROL_SESSION']
         );
+
+        // $this->setSessionInfo();
 
         if ($this->config['CAS_ENABLE_SAML']) {
             // Handle SAML logout requests that emanate from the CAS host exclusively.
             // Failure to restrict SAML logout requests to authorized hosts could
             // allow denial of service attacks where at the least the server is
             // tied up parsing bogus XML messages.
-            phpCAS::handleLogoutRequests(true, explode( ',', $this->config['CAS_REAL_HOSTS']));
+            phpCAS::handleLogoutRequests(true, explode(',', $this->config['CAS_REAL_HOSTS']));
         }
+
+        // For production use set the CA certificate that is the issuer of the cert on the CAS server and uncomment the line below
+        $this->configureCasCert();
+
+        // Set some urls
+        $this->setServiceUrl();
     }
 
     /**
      * Get phpCAS initializer server type
      * @return mixed|string
      */
-    protected function serverVersion() {
+    protected function serverVersion()
+    {
         if ($this->config['CAS_ENABLE_SAML']) {
             $server_type = SAML_VERSION_1_1;
         } else {
@@ -99,7 +118,7 @@ class Cas {
 
             if (is_null($server_type)) {
                 // This will never be null, but can be invalid values for which we need to detect and substitute.
-                phpCAS::log( 'Invalid CAS version set; Reverting to defaults' );
+                phpCAS::log('Invalid CAS version set; Reverting to defaults');
                 $server_type = CAS_VERSION_2_0;
             }
         }
@@ -111,10 +130,11 @@ class Cas {
      * If a fake user is set in the configuration
      * @return bool
      */
-    protected function isDummy() {
+    protected function isDummy()
+    {
         if (!empty($this->config['CAS_MASK_DUMMY'])) {
             $this->_maskdummy = true;
-            phpCAS::log( 'Masquerading as user: '. $this->config['CAS_MASK_DUMMY']);
+            phpCAS::log('Masquerading as user: ' . $this->config['CAS_MASK_DUMMY']);
             return true;
         }
         return false;
@@ -123,12 +143,13 @@ class Cas {
     /**
      * set debug and verbose
      */
-    protected function setDebug() {
+    protected function setDebug()
+    {
         if ($this->config['CAS_DEBUG']) {
             try {
                 phpCAS::setDebug($this->config['CAS_DEBUG_FILE_PATH']);
             } catch (\Exception $e) {
-                if(!class_exists("\\Monolog\\Logger") || !class_exists("\\Monolog\\Handler\\StreamHandler")) {
+                if (!class_exists("\\Monolog\\Logger") || !class_exists("\\Monolog\\Handler\\StreamHandler")) {
                     $logger = null;
                 } else {
                     // Fix for depreciation of setDebug
@@ -144,7 +165,7 @@ class Cas {
 
                 phpCAS::setLogger($logger);
             }
-            phpCAS::log( 'Loaded configuration:' . PHP_EOL . serialize($this->config));
+            phpCAS::log('Loaded configuration:' . PHP_EOL . serialize($this->config));
             phpCAS::setVerbose($this->config['CAS_VERBOSE']);
         }
     }
@@ -153,7 +174,8 @@ class Cas {
      * Configure SSL Validation
      * Having some kind of server cert validation in production is highly recommended.
      */
-    protected function configureCasCert() {
+    protected function configureCasCert()
+    {
         if (!empty($this->config['CAS_CERT_PATH'])) {
             // You can also disable the validation of the certficate CN. This means the
             // certificate must be valid but the CN of the certificate must not match the
@@ -171,17 +193,18 @@ class Cas {
      * Verify that HTTP_USER_AGENT is a spider
      * @return bool
      */
-    protected static function validateSpider() {
-        $agent = $_SERVER['HTTP_USER_AGENT'];
-        if (empty($agent)) {
-            return true;
+    protected static function validateSpider()
+    {
+        if (empty($_SERVER['HTTP_USER_AGENT'])) {
+            return false;
         }
+        $agent = $_SERVER['HTTP_USER_AGENT'];
         $spiders = array(
             'Googlebot', 'msnbot', 'Baiduspider', 'bingbot', 'Sogou web spider', 'Sogou inst spider', 'Sogou Pic Spider',
             'JikeSpider', 'Sosospider', 'Slurp', '360Spider', 'YodaoBot', 'OutfoxBot', 'fast-webcrawler',
-            'lycos_spider', 'scooter', 'ia_archiver', 'MJ12bot', 'AhrefsBot', 'Yisouspider',
+            'lycos_spider', 'scooter', 'ia_archiver', 'MJ12bot', 'AhrefsBot', 'Yisouspider', 'Bytespider',
         );
-        foreach($spiders as $spider) {
+        foreach ($spiders as $spider) {
             if (stristr($agent, $spider)) {
                 return false;
             }
@@ -192,7 +215,8 @@ class Cas {
     /**
      * Set session and cookie
      */
-    protected function setSessionInfo() {
+    protected function setSessionInfo()
+    {
         // Calling the session_name() function generates an error after the content of the cookie is sent in the HTTP response
         // In php7.2, you need to use session_start() before
         // More information：php.net/manual/zh/function.session-name.php
@@ -223,16 +247,17 @@ class Cas {
     /**
      * Set up login and logout url
      */
-    protected function setServiceUrl() {
+    protected function setServiceUrl()
+    {
         // Set the login URL of the CAS server.
-        if($this->config['CAS_LOGIN_URL']) {
+        if ($this->config['CAS_LOGIN_URL']) {
             phpCAS::setServerLoginURL($this->config['CAS_LOGIN_URL']);
         }
         // If specified, this will override the URL the user will be returning to.
-        if($this->config['CAS_REDIRECT_PATH']) {
+        if ($this->config['CAS_REDIRECT_PATH']) {
             // Set the fixed URL that will be set as the CAS service parameter.
             // When this method is not called, a phpCAS script uses its own URL.
-            phpCAS::setFixedServiceURL( $this->config['CAS_REDIRECT_PATH'] );
+            phpCAS::setFixedServiceURL($this->config['CAS_REDIRECT_PATH']);
         }
 
         // 设置 登出 url
@@ -247,7 +272,8 @@ class Cas {
      *
      * @return array
      */
-    public function getConfig() {
+    public function getConfig()
+    {
         return $this->config;
     }
 
@@ -255,7 +281,8 @@ class Cas {
      * Get login url
      * @return string
      */
-    public function login_url() {
+    public function login_url()
+    {
         return \phpCAS::getServerLoginURL();
     }
 
@@ -263,7 +290,8 @@ class Cas {
      * Get logout url
      * @return string
      */
-    public function logout_url() {
+    public function logout_url()
+    {
         return \phpCAS::getServerLogoutURL();
     }
 
@@ -271,14 +299,15 @@ class Cas {
      * Handle logout requests.
      * Verify in any request
      */
-    public function validateLogout() {
+    public function validateLogout()
+    {
         if (empty($_POST['logoutRequest'])) {
             return;
         }
         // 仅取 CAS_REAL_HOSTS 中的 HOST 部分
-        \phpCAS::handleLogoutRequests(true, array_map(function($url) {
+        \phpCAS::handleLogoutRequests(true, array_map(function ($url) {
             return parse_url($url, PHP_URL_HOST);
-        },$this->config['CAS_REAL_HOSTS']));
+        }, $this->config['CAS_REAL_HOSTS']));
 
         die();
     }
@@ -288,11 +317,12 @@ class Cas {
      *
      * @param string $service
      */
-    public function logout($service = '' ) {
+    public function logout($service = '')
+    {
         if (phpCAS::isSessionAuthenticated()) {
             if (isset($_SESSION['phpCAS'])) {
                 $serialized = serialize($_SESSION['phpCAS']);
-                phpCAS::log('Logout requested, but no session data found for user:' . PHP_EOL . $serialized );
+                phpCAS::log('Logout requested, but no session data found for user:' . PHP_EOL . $serialized);
             }
         }
         $params = [];
@@ -303,7 +333,7 @@ class Cas {
         // set logout redirect url
         if ($service) {
             $params['service'] = $service;
-        } else if($this->config['CAS_LOGOUT_REDIRECT']) {
+        } else if ($this->config['CAS_LOGOUT_REDIRECT']) {
             $params['service'] = $this->config['CAS_LOGOUT_REDIRECT'];
         } else {
             if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') {
@@ -311,7 +341,7 @@ class Cas {
             } else {
                 $params['service'] = 'http://';
             }
-            $params['service'] .= $_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF'];
+            $params['service'] .= $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF'];
         }
 
         \phpCAS::logout($params);
@@ -325,17 +355,18 @@ class Cas {
      * 获取用户id
      * @return int
      */
-    public function user() {
-        if ($this->isDummy()) {
-            return $this->config['CAS_MASK_DUMMY'];
+    public function user()
+    {
+        if (isset($this->userid)) {
+            return $this->userid;
         }
         // 重新去cas服务器验证后，自动获取到user
-        $auth = $this->checkAuthentication();
-        if(!$auth) {
+        $this->auth = $this->checkAuthentication();
+        if (!$this->auth) {
             return 0;
         }
-        $user = phpCAS::getUser();
-        return intval($user);
+        $this->userid = (int)phpCAS::getUser();
+        return $this->userid;
     }
 
     /**
@@ -344,8 +375,12 @@ class Cas {
      *
      * @return bool
      */
-    public function isAuthenticated() {
-        return $this->isDummy() ? true : phpCAS::isAuthenticated();
+    public function isAuthenticated()
+    {
+        if (isset($this->auth)) {
+            return $this->auth;
+        }
+        return $this->isDummy() || phpCAS::isAuthenticated();
     }
 
     /**
@@ -354,28 +389,31 @@ class Cas {
      * @return bool
      * @throws \Exception
      */
-    public function checkAuthentication() {
-        if($this->isDummy()) {
-            return true;
+    public function checkAuthentication()
+    {
+        if (isset($this->auth)) {
+            return $this->auth;
         }
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // 1.可能出现页面显示到提交这段时间内，其他站点登录，本站无效问题
             // 2.直接跨域POST请求，可能发生身份取得不正确的问题
-            $auth = $this->isAuthenticated();
+            $this->auth = $this->isAuthenticated();
         } else {
             try {
-                $auth = phpCAS::checkAuthentication();
+                $this->auth = phpCAS::checkAuthentication();
+            } catch(\Exception $e) {
+                $this->auth = false;
+                $str = '[Error]' . $this->error . ' [HTTP_REFERER]' . ($_SERVER['HTTP_REFERER'] ?? '') . ' [USER_AGENT]' . ($_SERVER['HTTP_USER_AGENT'] ?? '');
+                $ne = new \Exception($str, 40000, $e);
+                report($ne);
             }
-            catch(\Exception $e) {
-                throw new \Exception();
-            }
-//            $auth = phpCAS::checkAuthentication();
         }
-        if (!$auth) {
-            return false;
+        if (empty($this->auth)) {
+            $this->userid = 0;
+        } else {
+            $this->userid = (int)phpCAS::getUser();
         }
-
-        return true;
+        return $this->auth;
     }
 
     /**
@@ -383,7 +421,8 @@ class Cas {
      * 强制登陆
      * @return bool
      */
-    public function forceAuthentication() {
+    public function forceAuthentication()
+    {
         if ($this->isDummy()) {
             return true;
         }
@@ -399,7 +438,8 @@ class Cas {
      *
      * @return mixed
      */
-    public function getAttribute($key) {
+    public function getAttribute($key)
+    {
         if (!$this->isDummy()) {
             return phpCAS::getAttribute($key);
         }
@@ -416,7 +456,8 @@ class Cas {
      *
      * @return mixed
      */
-    public function getAttributes() {
+    public function getAttributes()
+    {
         // We don't error check because phpCAS has its own error handling.
         return $this->isDummy() ? $this->_attributes : phpCAS::getAttributes();
     }
@@ -428,8 +469,9 @@ class Cas {
      *
      * @return boolean
      */
-    public function hasAttribute($key) {
-        if($this->isDummy()) {
+    public function hasAttribute($key)
+    {
+        if ($this->isDummy()) {
             return array_key_exists($key, $this->_attributes);
         }
 
@@ -442,9 +484,22 @@ class Cas {
      *
      * @param array $attr : the attributes of the user.
      */
-    public function setAttributes(array $attr) {
+    public function setAttributes(array $attr)
+    {
         $this->_attributes = $attr;
-        phpCAS::log( 'Forced setting of user masquerading attributes: ' . serialize( $attr ) );
+        phpCAS::log('Forced setting of user masquerading attributes: ' . serialize($attr));
+    }
+
+    public function setAuth($auth)
+    {
+        $this->auth = (bool)$auth;
+        return $this;
+    }
+
+    public function setUser($id)
+    {
+        $this->userid = (int)$id;
+        return $this;
     }
 
     /**
@@ -453,10 +508,11 @@ class Cas {
      * @param $params
      * @return mixed
      */
-    public function __call($method, $params) {
+    public function __call($method, $params)
+    {
         if (method_exists('phpCAS', $method) && is_callable(['phpCAS', $method])) {
             return call_user_func_array(['phpCAS', $method], $params);
         }
-        throw new \BadMethodCallException( 'Method not callable in phpCAS ' . $method . '::' . print_r($params,true));
+        throw new \BadMethodCallException('Method not callable in phpCAS ' . $method . '::' . print_r($params, true));
     }
 }
